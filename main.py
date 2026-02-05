@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Depends
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import torch
@@ -199,8 +199,9 @@ async def upload_product(
 
 @app.post("/search-similar")
 async def search_similar(
+    request: Request,
     image: UploadFile = File(...),
-    limit: int = Form(5)
+    limit: int = Form(10)
 ):
     """Buscar productos similares por imagen"""
     try:
@@ -218,6 +219,7 @@ async def search_similar(
         
         # Calcular similitudes
         similarities = []
+        base_url = str(request.base_url)
         for product in all_products:
             product_embedding = np.array(product["embedding"])
             similarity = calculate_similarity(search_embedding, product_embedding)
@@ -227,6 +229,7 @@ async def search_similar(
                 "name": product["name"],
                 "user_id": product["user_id"],
                 "image_path": product["image_path"],
+                "image_url": f"{base_url}product-image/{product['id']}",
                 "similarity": float(similarity),
                 "created_at": product["created_at"]
             })
@@ -246,9 +249,10 @@ async def search_similar(
 
 @app.post("/search-similar-by-user")
 async def search_similar_by_user(
+    request: Request,
     image: UploadFile = File(...),
     user_id: str = Form(...),
-    limit: int = Form(5)
+    limit: int = Form(10)
 ):
     """Buscar productos similares por imagen filtrado por usuario"""
     try:
@@ -274,6 +278,7 @@ async def search_similar_by_user(
         
         # Calcular similitudes
         similarities = []
+        base_url = str(request.base_url)
         for product in user_products:
             product_embedding = np.array(product["embedding"])
             similarity = calculate_similarity(search_embedding, product_embedding)
@@ -283,6 +288,7 @@ async def search_similar_by_user(
                 "name": product["name"],
                 "user_id": product["user_id"],
                 "image_path": product["image_path"],
+                "image_url": f"{base_url}product-image/{product['id']}",
                 "similarity": float(similarity),
                 "created_at": product["created_at"]
             })
